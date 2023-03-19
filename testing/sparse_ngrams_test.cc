@@ -47,9 +47,17 @@ TEST_F(NgramsTest, TestSimple) {
 TEST_F(NgramsTest, TestSimpleCovering) {
   EXPECT_THAT(CollectCoveringNgrams("he"), UnorderedElementsAre());
   EXPECT_THAT(CollectCoveringNgrams("hel"), UnorderedElementsAre("hel"));
-  EXPECT_THAT(CollectCoveringNgrams("hell"), UnorderedElementsAre("hel", "ell"));
+  EXPECT_THAT(CollectCoveringNgrams("hell"),
+              UnorderedElementsAre("hel", "ell"));
   EXPECT_THAT(CollectCoveringNgrams("hello world"),
-      UnorderedElementsAre("o world", "hello "));
+              UnorderedElementsAre("o world", "hello "));
+}
+
+TEST_F(NgramsTest, SplitGithubCodesearch) {
+  EXPECT_THAT(CollectNgrams("chester"),
+              UnorderedElementsAre("che", "hes", "ste", "est", "este", "ter"));
+  EXPECT_THAT(CollectCoveringNgrams("chester"),
+              UnorderedElementsAre("che", "hes", "este", "ter"));
 }
 
 }  // namespace
