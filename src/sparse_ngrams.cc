@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <iostream>
 
 namespace sparse_ngrams {
 namespace {
@@ -39,7 +40,7 @@ void SparseNgramsBuilder::BuildAllNgrams(
     // Take a hash and position.
     HashAndPos p{HashBigram(s.data() + i), i};
     // Remove from the end until hashes are bigger.
-    while (!st.empty() && p.hash < st.back().hash) {
+    while (!st.empty() && p.hash > st.back().hash) {
       // Consume all while removing bigger hashes as it may be relevant for a
       // substring search.
       consumer(s.data() + st.back().pos, s.data() + i + 2);
@@ -68,7 +69,7 @@ void SparseNgramsBuilder::BuildCoveringNgrams(
   // Look at increasing and decreasing sequences.
   for (size_t i = 0; i + 2 <= s.size(); ++i) {
     HashAndPos p{HashBigram(s.data() + i), i};
-    while (!deque.empty() && p.hash < deque.back().hash) {
+    while (!deque.empty() && p.hash > deque.back().hash) {
       // Glue same hashes.
       if (deque.front().hash == deque.back().hash) {
         consumer(s.data() + deque.back().pos, s.data() + i + 2);
