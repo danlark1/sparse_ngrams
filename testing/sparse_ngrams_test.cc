@@ -13,7 +13,7 @@ namespace {
 
 class NgramsTest : public ::testing::Test {
  protected:
-  NgramsTest() : builder_({32, true}) {}
+  NgramsTest() : builder_({}) {}
 
   std::unordered_set<std::string> CollectNgrams(std::string_view s) {
     std::unordered_set<std::string> set;

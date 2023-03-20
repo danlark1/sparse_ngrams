@@ -1,20 +1,20 @@
 #include "sparse_ngrams.h"
 
 #include <deque>
-#include <vector>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace sparse_ngrams {
 namespace {
 
 // Some hashing algorithm.
 inline uint32_t HashBigram(const char* begin) {
-  // Improving the efficiency of ^ and $ searches.
+  // Maybe use CRC? Use fingerprint from or_tools.
   const uint64_t kMul1 = 0xc6a4a7935bd1e995ULL;
   const uint64_t kMul2 = 0x228876a7198b743ULL;
-  uint64_t a =
-      static_cast<uint64_t>(begin[0]) * kMul1 + static_cast<uint64_t>(begin[1]) * kMul2;
+  uint64_t a = static_cast<uint64_t>(begin[0]) * kMul1 +
+               static_cast<uint64_t>(begin[1]) * kMul2;
   return a + (~a >> 47);
 }
 
@@ -22,7 +22,9 @@ inline uint32_t HashBigram(const char* begin) {
 
 SparseNgramsBuilder::SparseNgramsBuilder(
     const SparseNgramsBuilder::Options& options)
-    : options_(options) {}
+    : options_(options) {
+  (void)options_;
+}
 
 void SparseNgramsBuilder::BuildAllNgrams(
     std::string_view s,
@@ -34,16 +36,21 @@ void SparseNgramsBuilder::BuildAllNgrams(
   };
   std::vector<HashAndPos> st;
   for (size_t i = 0; i + 2 <= s.size(); ++i) {
-    HashAndPos p{HashBigram(s.data() + i), i + 1};
+    // Take a hash and position.
+    HashAndPos p{HashBigram(s.data() + i), i};
+    // Remove from the end until hashes are bigger.
     while (!st.empty() && p.hash < st.back().hash) {
-      consumer(s.data() + st.back().pos - 1, s.data() + i + 2);
+      // Consume all while removing bigger hashes as it may be relevant for a
+      // substring search.
+      consumer(s.data() + st.back().pos, s.data() + i + 2);
+      // Same hashes should be glued to the left.
       while (st.size() > 1 && st.back().hash == st[st.size() - 2].hash) {
         st.pop_back();
       }
       st.pop_back();
     }
     if (!st.empty()) {
-      consumer(s.data() + st.back().pos - 1, s.data() + i + 2);
+      consumer(s.data() + st.back().pos, s.data() + i + 2);
     }
     st.push_back(p);
   }
@@ -60,19 +67,15 @@ void SparseNgramsBuilder::BuildCoveringNgrams(
   std::deque<HashAndPos> deque;
   // Look at increasing and decreasing sequences.
   for (size_t i = 0; i + 2 <= s.size(); ++i) {
-    HashAndPos p{HashBigram(s.data() + i), i + 1};
-    // Filter out big ngrams.
-    if (!deque.empty() && i - deque.front().pos + 3 >= options_.max_ngram_size) {
-      consumer(s.data() + deque[0].pos - 1, s.data() + deque[1].pos + 1);
-      deque.pop_front();
-    }
+    HashAndPos p{HashBigram(s.data() + i), i};
     while (!deque.empty() && p.hash < deque.back().hash) {
+      // Glue same hashes.
       if (deque.front().hash == deque.back().hash) {
-        consumer(s.data() + deque.back().pos - 1, s.data() + i + 2);
+        consumer(s.data() + deque.back().pos, s.data() + i + 2);
         while (deque.size() > 1) {
-          size_t last_position = deque.back().pos;
+          size_t last_position = deque.back().pos + 2;
           deque.pop_back();
-          consumer(s.data() + deque.back().pos - 1, s.data() + last_position + 1);
+          consumer(s.data() + deque.back().pos, s.data() + last_position);
         }
       }
       deque.pop_back();
@@ -80,10 +83,9 @@ void SparseNgramsBuilder::BuildCoveringNgrams(
     deque.push_back(p);
   }
   while (deque.size() > 1) {
-    size_t last_position = deque.back().pos;
+    size_t last_position = deque.back().pos + 2;
     deque.pop_back();
-    consumer(s.data() + deque.back().pos - 1,
-             s.data() + last_position + 1);
+    consumer(s.data() + deque.back().pos, s.data() + last_position);
   }
 }
 
