@@ -60,5 +60,14 @@ TEST_F(NgramsTest, SplitGithubCodesearch) {
               UnorderedElementsAre("che", "hes", "este", "ter"));
 }
 
+TEST_F(NgramsTest, SplitForLool) {
+  EXPECT_THAT(CollectNgrams("for(int i=42"),
+              UnorderedElementsAre("for", "or(", "r(i", "r(in", "(in", "int ",
+                                   "or(in", "nt ", "int", "t i", "int i",
+                                   "or(int i", " i=", "i=4", "=42", "i=42"));
+  EXPECT_THAT(CollectCoveringNgrams("for(int i=42"),
+              UnorderedElementsAre("for", "or(int i", " i=", "i=42"));
+}
+
 }  // namespace
 }  // namespace sparse_ngrams
