@@ -60,7 +60,7 @@ TEST_F(NgramsTest, SplitGithubCodesearch) {
               UnorderedElementsAre("che", "hes", "este", "ter"));
 }
 
-TEST_F(NgramsTest, SplitForLool) {
+TEST_F(NgramsTest, SplitForLoop) {
   EXPECT_THAT(CollectNgrams("for(int i=42"),
               UnorderedElementsAre("for", "or(", "r(i", "r(in", "(in", "int ",
                                    "or(in", "nt ", "int", "t i", "int i",
