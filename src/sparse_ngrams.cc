@@ -1,10 +1,8 @@
 #include "sparse_ngrams.h"
 
-#include <deque>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <iostream>
 
 namespace sparse_ngrams {
 namespace {
@@ -65,28 +63,28 @@ void SparseNgramsBuilder::BuildCoveringNgrams(
     uint32_t hash;
     size_t pos;
   };
-  std::deque<HashAndPos> deque;
+  std::vector<HashAndPos> st;
   // Look at increasing and decreasing sequences.
   for (size_t i = 0; i + 2 <= s.size(); ++i) {
     HashAndPos p{HashBigram(s.data() + i), i};
-    while (!deque.empty() && p.hash > deque.back().hash) {
+    while (!st.empty() && p.hash > st.back().hash) {
       // Glue same hashes.
-      if (deque.front().hash == deque.back().hash) {
-        consumer(s.data() + deque.back().pos, s.data() + i + 2);
-        while (deque.size() > 1) {
-          size_t last_position = deque.back().pos + 2;
-          deque.pop_back();
-          consumer(s.data() + deque.back().pos, s.data() + last_position);
+      if (st.front().hash == st.back().hash) {
+        consumer(s.data() + st.back().pos, s.data() + i + 2);
+        while (st.size() > 1) {
+          size_t last_position = st.back().pos + 2;
+          st.pop_back();
+          consumer(s.data() + st.back().pos, s.data() + last_position);
         }
       }
-      deque.pop_back();
+      st.pop_back();
     }
-    deque.push_back(p);
+    st.push_back(p);
   }
-  while (deque.size() > 1) {
-    size_t last_position = deque.back().pos + 2;
-    deque.pop_back();
-    consumer(s.data() + deque.back().pos, s.data() + last_position);
+  while (st.size() > 1) {
+    size_t last_position = st.back().pos + 2;
+    st.pop_back();
+    consumer(s.data() + st.back().pos, s.data() + last_position);
   }
 }
 

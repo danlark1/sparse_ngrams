@@ -58,6 +58,8 @@ TEST_F(NgramsTest, SplitGithubCodesearch) {
   EXPECT_THAT(CollectNgrams("chester "),
               UnorderedElementsAre("che", "hes", "ches", "est", "chest", "ste",
                                    "ter", "ster", "er "));
+  EXPECT_THAT(CollectCoveringNgrams("chester "),
+              UnorderedElementsAre("chest", "ster", "er "));
   EXPECT_THAT(CollectCoveringNgrams("chester"),
               UnorderedElementsAre("chest", "ster"));
 }
