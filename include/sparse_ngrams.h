@@ -16,18 +16,21 @@ class SparseNgramsBuilder {
   // O(s.size()) algorithm to construct at most 2n - 2 ngrams. On a substring,
   // returns a subset of these ngrams. consumer returns begin and end of a
   // string. Used by indexing.
-  void BuildAllNgrams(std::string_view s,
-                      const std::function<void(/*begin=*/const char*,
-                                               /*end=*/const char*)>& consumer);
+  void BuildAllNgrams(
+      std::string_view s,
+      const std::function<void(/*substring=*/std::string_view)>& consumer);
 
+  struct CoveringNgramsOptions {
+    size_t max_ngram_length = 16;
+  };
   // O(s.size()) algorithm to construct at most n-2 ngrams. Covers with the
   // minimal amount of ngrams from the BuildAllNgrams. Useful for reducing
   // the amount of ngram search and making it an intersection of all found docs
   // Useful for a substring search and retrieval.
   void BuildCoveringNgrams(
       std::string_view s,
-      const std::function<void(/*begin=*/const char*, /*end=*/const char*)>&
-          consumer);
+      const std::function<void(/*substring=*/std::string_view)>& consumer,
+      const CoveringNgramsOptions& ngram_options = {/*max_ngram_length=*/16});
 
  private:
   Options options_;

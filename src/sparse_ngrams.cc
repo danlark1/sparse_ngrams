@@ -1,5 +1,6 @@
 #include "sparse_ngrams.h"
 
+#include <deque>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -27,8 +28,7 @@ SparseNgramsBuilder::SparseNgramsBuilder(
 
 void SparseNgramsBuilder::BuildAllNgrams(
     std::string_view s,
-    const std::function<void(/*begin=*/const char*, /*end=*/const char*)>&
-        consumer) {
+    const std::function<void(/*substring=*/std::string_view)>& consumer) {
   struct HashAndPos {
     uint32_t hash;
     size_t pos;
@@ -41,7 +41,8 @@ void SparseNgramsBuilder::BuildAllNgrams(
     while (!st.empty() && p.hash > st.back().hash) {
       // Consume all while removing bigger hashes as it may be relevant for a
       // substring search.
-      consumer(s.data() + st.back().pos, s.data() + i + 2);
+      consumer(
+          std::string_view(s.data() + st.back().pos, i + 2 - st.back().pos));
       // Same hashes should be glued to the left.
       while (st.size() > 1 && st.back().hash == st[st.size() - 2].hash) {
         st.pop_back();
@@ -49,7 +50,8 @@ void SparseNgramsBuilder::BuildAllNgrams(
       st.pop_back();
     }
     if (!st.empty()) {
-      consumer(s.data() + st.back().pos, s.data() + i + 2);
+      consumer(
+          std::string_view(s.data() + st.back().pos, i + 2 - st.back().pos));
     }
     st.push_back(p);
   }
@@ -57,24 +59,32 @@ void SparseNgramsBuilder::BuildAllNgrams(
 
 void SparseNgramsBuilder::BuildCoveringNgrams(
     std::string_view s,
-    const std::function<void(/*begin=*/const char*, /*end=*/const char*)>&
-        consumer) {
+    const std::function<void(/*substring=*/std::string_view)>& consumer,
+    const SparseNgramsBuilder::CoveringNgramsOptions& ngram_options) {
   struct HashAndPos {
     uint32_t hash;
     size_t pos;
   };
-  std::vector<HashAndPos> st;
+  std::deque<HashAndPos> st;
   // Look at increasing and decreasing sequences.
   for (size_t i = 0; i + 2 <= s.size(); ++i) {
     HashAndPos p{HashBigram(s.data() + i), i};
+    if (st.size() > 1 &&
+        i - st.front().pos + 3 >= ngram_options.max_ngram_length) {
+      consumer(std::string_view(s.data() + st.front().pos,
+                                st[1].pos + 2 - st.front().pos));
+      st.pop_front();
+    }
     while (!st.empty() && p.hash > st.back().hash) {
       // Glue same hashes.
       if (st.front().hash == st.back().hash) {
-        consumer(s.data() + st.back().pos, s.data() + i + 2);
+        consumer(
+            std::string_view(s.data() + st.back().pos, i + 2 - st.back().pos));
         while (st.size() > 1) {
           size_t last_position = st.back().pos + 2;
           st.pop_back();
-          consumer(s.data() + st.back().pos, s.data() + last_position);
+          consumer(std::string_view(s.data() + st.back().pos,
+                                    last_position - st.back().pos));
         }
       }
       st.pop_back();
@@ -84,7 +94,8 @@ void SparseNgramsBuilder::BuildCoveringNgrams(
   while (st.size() > 1) {
     size_t last_position = st.back().pos + 2;
     st.pop_back();
-    consumer(s.data() + st.back().pos, s.data() + last_position);
+    consumer(std::string_view(s.data() + st.back().pos,
+                              last_position - st.back().pos));
   }
 }
 

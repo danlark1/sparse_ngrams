@@ -17,16 +17,16 @@ class NgramsTest : public ::testing::Test {
 
   std::unordered_set<std::string> CollectNgrams(std::string_view s) {
     std::unordered_set<std::string> set;
-    builder_.BuildAllNgrams(s, [&set](const char* begin, const char* end) {
-      set.insert(std::string(begin, end));
+    builder_.BuildAllNgrams(s, [&set](std::string_view substring) {
+      set.insert(std::string(substring));
     });
     return set;
   }
 
   std::unordered_set<std::string> CollectCoveringNgrams(std::string_view s) {
     std::unordered_set<std::string> set;
-    builder_.BuildCoveringNgrams(s, [&set](const char* begin, const char* end) {
-      set.insert(std::string(begin, end));
+    builder_.BuildCoveringNgrams(s, [&set](std::string_view substring) {
+      set.insert(std::string(substring));
     });
     return set;
   }
